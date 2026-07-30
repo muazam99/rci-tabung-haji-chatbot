@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# source PDF (114MB, over GitHub's 100MB limit) — report.md is the committed
+# source of truth derived from it; keep the PDF local only
+/*.pdf
