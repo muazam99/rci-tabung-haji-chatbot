@@ -100,16 +100,16 @@ export function ChatWorkspace({ lang }: ChatWorkspaceProps) {
   return (
     <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="flex h-full flex-col">
       <div className="border-b p-2">
-        <TabsList className="w-full">
-          <TabsTrigger value="toc">
+        <TabsList className="w-full h-10!">
+          <TabsTrigger value="toc" className="py-2!">
             <List />
             {strings.tabKandungan}
           </TabsTrigger>
-          <TabsTrigger value="search">
+          <TabsTrigger value="search" className="py-2!">
             <Search />
             {strings.tabCari}
           </TabsTrigger>
-          <TabsTrigger value="chat">
+          <TabsTrigger value="chat" className="py-2!">
             <Sparkles />
             {strings.tabTanyaAi}
           </TabsTrigger>
