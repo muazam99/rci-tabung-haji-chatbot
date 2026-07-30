@@ -36,8 +36,11 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
   const containerRef = useRef<HTMLDivElement>(null);
   const flipbookRef = useRef<PdfFlipbookHandle>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isPageFlipping, setIsPageFlipping] = useState(false);
   const [zoom, setZoom] = useState(1);
-  const [showThumbnails, setShowThumbnails] = useState(false);
+  // Visible by default — a page-thumbnail strip beneath the spread is what
+  // makes this read as a book rather than a bare document canvas.
+  const [showThumbnails, setShowThumbnails] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [containerSize, setContainerSize] = useState({ width: 800, height: 900 });
   const [basePageSize, setBasePageSize] = useState(FALLBACK_PAGE_SIZE);
@@ -67,7 +70,6 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
     if (!el) return;
     const ro = new ResizeObserver((entries) => {
       const entry = entries[0];
-      console.log("DEBUG4 RO fired", entry?.contentRect.width, entry?.contentRect.height);
       if (!entry) return;
       // Rounded to whole pixels and only applied on an actual change: raw
       // contentRect values otherwise jitter by sub-pixel fractions between
@@ -100,6 +102,19 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
   useEffect(() => {
     function onFsChange() {
       setIsFullscreen(document.fullscreenElement === containerRef.current);
+      // The fullscreenchange event can fire a frame or two before the
+      // browser finishes resizing the element (Chrome animates the
+      // transition), so the very next ResizeObserver tick sometimes still
+      // reports the pre-fullscreen size. A direct rect read after a paint
+      // catches the real size instead of waiting on that tick.
+      requestAnimationFrame(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const rect = el.getBoundingClientRect();
+        const width = Math.round(rect.width);
+        const height = Math.round(rect.height);
+        setContainerSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+      });
     }
     document.addEventListener("fullscreenchange", onFsChange);
     return () => document.removeEventListener("fullscreenchange", onFsChange);
@@ -166,10 +181,6 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
   // remounting the flipbook via this key, rather than expecting the library
   // to relayout an already-live instance.
   const sizeKey = `${Math.round(pageWidth / 4) * 4}x${Math.round(pageHeight / 4) * 4}`;
-  console.log(
-    "DEBUG3 render",
-    JSON.stringify({ cw: containerSize.width, ch: containerSize.height, pageWidth, pageHeight, renderScale, sizeKey })
-  );
 
   return (
     <div className="flex h-full flex-col">
@@ -187,20 +198,30 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
         onToggleThumbnails={() => setShowThumbnails((v) => !v)}
         lang={lang}
       />
-      <div ref={containerRef} className="relative flex-1 overflow-auto bg-neutral-100 dark:bg-neutral-900">
+      <div
+        ref={containerRef}
+        className="scrollbar-hide relative flex-1 overflow-auto bg-[#ded6c2] dark:bg-neutral-900"
+      >
         <div className="flex min-h-full items-center justify-center p-3">
-          <PdfFlipbook
-            key={sizeKey}
-            ref={flipbookRef}
-            pdfDoc={pdfDoc}
-            numPages={numPages}
-            initialPage={currentPage}
-            pageWidth={Math.round(pageWidth)}
-            pageHeight={Math.round(pageHeight)}
-            scale={renderScale}
-            onPageChange={setCurrentPage}
-            highlight={highlight ?? undefined}
-          />
+          <div
+            className="book-frame relative"
+            style={{ width: Math.round(pageWidth) * 2, height: Math.round(pageHeight) }}
+          >
+            <PdfFlipbook
+              key={sizeKey}
+              ref={flipbookRef}
+              pdfDoc={pdfDoc}
+              numPages={numPages}
+              initialPage={currentPage}
+              pageWidth={Math.round(pageWidth)}
+              pageHeight={Math.round(pageHeight)}
+              scale={renderScale}
+              onPageChange={setCurrentPage}
+              onFlippingChange={setIsPageFlipping}
+              highlight={highlight ?? undefined}
+            />
+            <div className="book-spine" style={{ opacity: isPageFlipping ? 0 : 1 }} aria-hidden />
+          </div>
         </div>
       </div>
       <PageScrubber

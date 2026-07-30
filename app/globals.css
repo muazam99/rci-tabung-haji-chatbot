@@ -154,3 +154,78 @@
 .prose-answer :is(h1, h2, h3, strong) {
   font-family: var(--font-sans);
 }
+
+/* PDF viewer pane: panning while zoomed in still needs real scroll, but a
+   flip animation briefly overflows its bounds too — a flashing scrollbar on
+   every page turn reads as broken. Scrolling stays fully functional; only
+   the browser-drawn track/thumb are hidden. */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Book-style framing around the two-page flipbook spread: a stack of
+   paper-edge slivers peeking out from behind the outer left/right sides
+   (as if the visible spread is just the top of a bound block of pages),
+   plus a persistent darkened gutter down the center fold. Purely
+   decorative — sized to exactly match the flipbook via inline width/height
+   in pdf-viewer.tsx, so it tracks the fit-to-container/zoom/fullscreen
+   sizing instead of being a fixed guess. */
+.book-frame {
+  /* isolation:isolate gives this element its own stacking context, so the
+     ::before/::after z-index:-1 below stay scoped to just behind the
+     flipbook — without it, they escape to the page's root stacking
+     context and paint underneath the entire document instead. */
+  isolation: isolate;
+  border-radius: 3px;
+  box-shadow: 0 18px 40px -14px rgba(0, 0, 0, 0.5);
+}
+.book-frame::before,
+.book-frame::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  width: 9px;
+  background-color: #efe9da;
+  z-index: -1;
+}
+.book-frame::before {
+  left: -7px;
+  border-radius: 3px 0 0 3px;
+  box-shadow:
+    -2px 0 0 0 #e6ddc5,
+    -4px 0 0 0 #dad0b3,
+    -6px 0 0 0 #cec2a1;
+}
+.book-frame::after {
+  right: -7px;
+  border-radius: 0 3px 3px 0;
+  box-shadow:
+    2px 0 0 0 #e6ddc5,
+    4px 0 0 0 #dad0b3,
+    6px 0 0 0 #cec2a1;
+}
+.book-spine {
+  position: absolute;
+  inset: 0;
+  left: 50%;
+  width: 22px;
+  transform: translateX(-50%);
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(0, 0, 0, 0.14) 50%,
+    transparent
+  );
+  pointer-events: none;
+  /* Hidden (see the opacity inline style in pdf-viewer.tsx) whenever a page
+     is actually mid-turn — the gradient is fixed to the spread's flat
+     center line and doesn't rotate with the curling page, so leaving it on
+     during the flip animation makes it look like a smudge floating on top
+     of the page rather than a fold in the paper. */
+  transition: opacity 0.15s ease-out;
+}

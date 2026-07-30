@@ -51,7 +51,10 @@ export function ThumbnailRail({ pdfDoc, numPages, currentPage, onSelect }: Thumb
   }, [currentPage]);
 
   return (
-    <div ref={railRef} className="flex h-24 gap-1.5 overflow-x-auto border-t bg-muted/40 px-2 py-2">
+    <div
+      ref={railRef}
+      className="scrollbar-hide flex h-28 gap-1.5 overflow-x-auto border-t bg-[#d8cfb8] px-2 py-2 dark:bg-neutral-950/40"
+    >
       {Array.from({ length: numPages }, (_, i) => {
         const pageNumber = i + 1;
         const isVisible = pageNumber >= visibleRange.start && pageNumber <= visibleRange.end;
@@ -71,7 +74,7 @@ export function ThumbnailRail({ pdfDoc, numPages, currentPage, onSelect }: Thumb
           >
             <div
               className={cn(
-                "flex h-20 w-full items-center justify-center overflow-hidden rounded border bg-white",
+                "flex h-24 w-full items-center justify-center overflow-hidden rounded border bg-[#f8f3e8] shadow-sm",
                 isActive && "border-primary ring-2 ring-primary/40"
               )}
             >

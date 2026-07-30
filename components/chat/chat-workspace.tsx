@@ -27,7 +27,9 @@ export function ChatWorkspace({ lang, hideSidebar }: ChatWorkspaceProps) {
   // Lazy initializer only generates a random id — no localStorage read, so
   // this is safe to compute during the server render pass too.
   const [activeId, setActiveId] = useState(() => createConversation().id);
-  const [collapsed, setCollapsed] = useState(false);
+  // Collapsed by default — the conversation list is a secondary affordance
+  // most readers won't need open while asking questions.
+  const [collapsed, setCollapsed] = useState(true);
   // Deliberately state, not a ref: a ref flips to "hydrated" synchronously
   // the instant the load effect runs, but `conversations` only catches up
   // to the loaded value on the NEXT render — so a save effect gated on a
@@ -47,7 +49,7 @@ export function ChatWorkspace({ lang, hideSidebar }: ChatWorkspaceProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setConversations(loaded);
     if (loaded[0]) setActiveId(loaded[0].id);
-    if (window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1") setCollapsed(true);
+    if (window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "0") setCollapsed(false);
     setHydrated(true);
   }, []);
 

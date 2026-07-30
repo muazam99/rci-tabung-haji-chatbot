@@ -27,13 +27,15 @@ export function CitationCard({ paragraphId, lang }: CitationCardProps) {
     <button
       type="button"
       onClick={() => goToParagraph(paragraphId)}
-      className="flex max-w-[240px] flex-col items-start gap-0.5 rounded-lg border border-border/60 bg-background px-2.5 py-1.5 text-left text-xs transition-colors hover:border-primary/40 hover:bg-muted active:scale-[0.98]"
+      className="flex w-[240px] shrink-0 flex-col items-start gap-0.5 rounded-lg border border-border/60 bg-background px-2.5 py-1.5 text-left text-xs transition-colors hover:border-primary/40 hover:bg-muted active:scale-[0.98]"
     >
-      <span className="inline-flex items-center gap-1 font-medium text-foreground">
+      <span className="inline-flex w-full items-center gap-1 font-medium text-foreground">
         <BookOpenText className="size-3.5 shrink-0" />
-        {paragraphId} · {strings.citationPage} {info.page}
+        <span className="truncate">
+          {paragraphId} · {strings.citationPage} {info.page}
+        </span>
       </span>
-      <span className="truncate text-muted-foreground">{info.headingPath}</span>
+      <span className="w-full truncate text-muted-foreground">{info.headingPath}</span>
     </button>
   );
 }

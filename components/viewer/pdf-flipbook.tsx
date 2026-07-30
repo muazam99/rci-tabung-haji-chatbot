@@ -33,13 +33,20 @@ interface PdfFlipbookProps {
   pageHeight: number;
   scale: number;
   onPageChange: (pdfPageNumber: number) => void;
+  /** Fires whenever the library's internal drag/turn state moves off
+   *  "read" (a corner-fold preview, an in-progress drag, or the flip
+   *  animation itself) and back — lets the viewer hide the static center-
+   *  gutter shadow while a page is actually mid-turn, since that overlay
+   *  doesn't rotate with the curling page and looks wrong sitting on top
+   *  of it. */
+  onFlippingChange?: (flipping: boolean) => void;
   /** Which page (if any) should show a paragraph highlight, and which
    *  paragraph — see PdfPageCanvas for how the highlight itself is found. */
   highlight?: { page: number; paragraphId: string; nonce: number };
 }
 
 export const PdfFlipbook = forwardRef<PdfFlipbookHandle, PdfFlipbookProps>(function PdfFlipbook(
-  { pdfDoc, numPages, initialPage, pageWidth, pageHeight, scale, onPageChange, highlight },
+  { pdfDoc, numPages, initialPage, pageWidth, pageHeight, scale, onPageChange, onFlippingChange, highlight },
   ref
 ) {
   const bookRef = useRef<FlipBookRef | null>(null);
@@ -77,6 +84,16 @@ export const PdfFlipbook = forwardRef<PdfFlipbookHandle, PdfFlipbookProps>(funct
       onPageChange(e.data + 1);
     },
     [onPageChange]
+  );
+
+  // "read" is the only at-rest state — anything else (a corner fold
+  // preview, an in-progress drag, or the flip animation) counts as
+  // "flipping" for the caller's purposes.
+  const handleChangeState = useCallback(
+    (e: { data: string }) => {
+      onFlippingChange?.(e.data !== "read");
+    },
+    [onFlippingChange]
   );
 
   // Every page within RENDER_WINDOW of the page currently on screen —
@@ -130,6 +147,7 @@ export const PdfFlipbook = forwardRef<PdfFlipbookHandle, PdfFlipbookProps>(funct
       mobileScrollSupport
       startPage={initialPage - 1}
       onFlip={handleFlip}
+      onChangeState={handleChangeState}
       className="mx-auto"
     >
       {pages}

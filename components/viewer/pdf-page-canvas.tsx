@@ -108,7 +108,6 @@ export const PdfPageCanvas = forwardRef<HTMLDivElement, PdfPageCanvasProps>(
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
       async function render() {
-        console.log("DEBUG2 effect fired", pageNumber, "scale=", scale);
         const canvas = canvasRef.current;
         if (!canvas) return;
         const page = await pdfDoc.getPage(pageNumber);
@@ -128,10 +127,8 @@ export const PdfPageCanvas = forwardRef<HTMLDivElement, PdfPageCanvasProps>(
         renderTaskRef.current = task;
         try {
           await task.promise;
-          console.log("DEBUG2 render resolved", pageNumber, "cancelled=", cancelled);
           if (!cancelled) setRendered(true);
         } catch (err) {
-          console.log("DEBUG2 render rejected", pageNumber, "cancelled=", cancelled, err instanceof Error ? err.name : err);
           // RenderingCancelledException is expected when we cancel a
           // stale render below — anything else is a real failure.
           if (!cancelled && !(err instanceof Error && err.name === "RenderingCancelledException")) {
@@ -193,7 +190,11 @@ export const PdfPageCanvas = forwardRef<HTMLDivElement, PdfPageCanvasProps>(
     }, [rendered, highlight?.paragraphId, highlight?.nonce, pageNumber, pdfDoc, scale]);
 
     return (
-      <div ref={ref} className="relative flex items-center justify-center bg-white" data-density="soft">
+      <div
+        ref={ref}
+        className="relative flex items-center justify-center border border-black/15 bg-[#f8f3e8]"
+        data-density="soft"
+      >
         {!rendered && (
           <div className="absolute inset-4 animate-pulse rounded bg-neutral-200" aria-hidden />
         )}
