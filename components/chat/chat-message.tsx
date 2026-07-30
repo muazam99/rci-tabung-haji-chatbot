@@ -2,8 +2,23 @@
 
 import ReactMarkdown from "react-markdown";
 import { CitationChip } from "@/components/chat/citation-chip";
-import type { UiLanguage } from "@/lib/ui-strings";
+import { CitationCard } from "@/components/chat/citation-card";
+import paragraphsData from "@/data/paragraphs.json";
+import { getUiStrings, type UiLanguage } from "@/lib/ui-strings";
 import { cn } from "@/lib/utils";
+
+const paragraphs: Record<string, unknown> = paragraphsData;
+const CITATION_ID_RE = /¶([\d]+(?:\.[\d]+){1,2})/g;
+
+/** Deduped, order-preserving list of valid citation ids in an assistant
+ *  answer — feeds the "Sumber" row rendered below the prose. */
+function extractValidCitationIds(text: string): string[] {
+  const seen = new Set<string>();
+  for (const m of text.matchAll(CITATION_ID_RE)) {
+    if (m[1] in paragraphs) seen.add(m[1]);
+  }
+  return [...seen];
+}
 
 export interface ChatMessageData {
   id: string;
@@ -35,6 +50,9 @@ interface ChatMessageProps {
 
 export function ChatMessage({ message, lang }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const strings = getUiStrings(lang);
+  const sourceIds = isUser ? [] : extractValidCitationIds(message.content);
+
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <div
@@ -44,7 +62,7 @@ export function ChatMessage({ message, lang }: ChatMessageProps) {
             ? "whitespace-pre-wrap bg-primary text-primary-foreground"
             : message.error
               ? "bg-destructive/10 text-destructive"
-              : "bg-muted text-foreground [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
+              : "prose-answer bg-muted text-foreground [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-5"
         )}
       >
         {isUser ? (
@@ -68,6 +86,16 @@ export function ChatMessage({ message, lang }: ChatMessageProps) {
         )}
         {message.streaming && (
           <span className="ml-1 inline-block h-3.5 w-1.5 animate-pulse bg-current align-middle" />
+        )}
+        {!message.streaming && sourceIds.length > 0 && (
+          <div className="mt-3 border-t border-border/60 pt-2 font-sans">
+            <p className="mb-1.5 text-xs font-medium text-muted-foreground">{strings.sourcesLabel}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {sourceIds.map((id) => (
+                <CitationCard key={id} paragraphId={id} lang={lang} />
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>

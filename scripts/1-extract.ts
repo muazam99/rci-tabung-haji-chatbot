@@ -211,28 +211,16 @@ function deDouble(line: string): string {
   return line.replace(/(.)\1/g, "$1");
 }
 
-/** Roman numerals ix..xxxvi as used by the front matter footers. */
-const ROMAN_SEQ = [
-  "i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x",
-  "xi", "xii", "xiii", "xiv", "xv", "xvi", "xvii", "xviii", "xix", "xx",
-  "xxi", "xxii", "xxiii", "xxiv", "xxv", "xxvi", "xxvii", "xxviii", "xxix", "xxx",
-  "xxxi", "xxxii", "xxxiii", "xxxiv", "xxxv", "xxxvi",
-];
-
 interface PageLabel {
   pdfPage: number;
   /** Printed page label as it appears in the report: "3", "xii", or null (no printed number). */
   label: string | null;
 }
 
+// Roman/arabic page-numbering scheme lives in lib/pdf-pages.ts (single
+// source of truth shared with the flipbook viewer's page mapping).
 function pageLabelFor(pdfPage: number): PageLabel {
-  if (pdfPage >= 11 && pdfPage <= 38) {
-    return { pdfPage, label: ROMAN_SEQ[pdfPage - 11 + 8] ?? null }; // pdfPage 11 -> ix (index 8)
-  }
-  if (pdfPage >= 39 && pdfPage <= 249) {
-    return { pdfPage, label: String(pdfPage - 38) };
-  }
-  return { pdfPage, label: null };
+  return { pdfPage, label: pdfPageToPrintedLabel(pdfPage) };
 }
 
 /**

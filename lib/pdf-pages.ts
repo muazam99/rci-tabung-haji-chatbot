@@ -14,7 +14,13 @@
  *   - PDF pages 250-253: trailing colophon — no printed number.
  */
 
-export const PDF_TOTAL_PAGES = 253;
+// 252, not 253: pdftotext's page-splitting (used to derive this scheme)
+// leaves one trailing empty split after the real last page, which is easy
+// to miscount as an extra page — confirmed against both pdfjs's own
+// `numPages` and the PDF's own page-tree /Count field. Nothing in this
+// file's actual math depends on this constant; the viewer gets its real
+// page count straight from pdfjs at runtime.
+export const PDF_TOTAL_PAGES = 252;
 
 const ROMAN_SEQ = [
   "i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x",

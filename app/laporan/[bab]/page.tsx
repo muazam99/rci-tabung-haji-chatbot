@@ -64,7 +64,7 @@ export default async function ChapterPage({ params }: PageProps) {
         </div>
       </nav>
 
-      <article className="space-y-4 text-[15px] leading-relaxed">
+      <article className="prose-answer space-y-4">
         {blocks.map((block, i) => {
           if (block.type === "h1") {
             return (

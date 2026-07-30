@@ -40,6 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# source PDF (114MB, over GitHub's 100MB limit) — report.md is the committed
-# source of truth derived from it; keep the PDF local only
+# The original 114MB source PDF is gitignored here (over GitHub's 100MB
+# limit); a compressed copy small enough to commit and serve directly lives
+# at public/laporan-rci-tabung-haji.pdf (used by the flipbook viewer) and is
+# NOT covered by this pattern, since it only matches the repo root.
 /*.pdf
