@@ -24,14 +24,10 @@ import { join } from "node:path";
 import OpenAI from "openai";
 
 import indexData from "@/data/index.json";
-import chunksData from "@/data/chunks.json";
-import bm25Data from "@/data/bm25.json";
 import glossaryData from "@/data/glossary.json";
 import faqData from "@/data/faq.json";
 
-import { search, type BM25Index } from "@/lib/search/bm25";
-import { buildGlossaryIndex, expandQuery, headingBoost } from "@/lib/search/expand";
-import { tokenize } from "@/lib/search/tokenize";
+import { retrieveChunks } from "@/lib/search/retrieve";
 import { SYSTEM_PROMPT } from "@/lib/system-prompt";
 import { checkRateLimit, getRateLimitCookieName } from "@/lib/rate-limit";
 import { lookupCache, storeInRuntimeCache } from "@/lib/answer-cache";
@@ -43,14 +39,6 @@ const MAX_QUESTION_LENGTH = 500;
 const MAX_OUTPUT_TOKENS = 800;
 const MODEL = "deepseek-v4-flash";
 
-interface Chunk {
-  id: string;
-  headingPath: string;
-  pages: string;
-  paraIds: string[];
-  content: string;
-}
-
 // --- Static, committed data loaded once at module scope (kept in memory
 // for the life of the warm serverless instance — this is the "in-memory,
 // no database" design the whole app is built around). ---
@@ -58,11 +46,6 @@ const CORE_MD = readFileSync(join(process.cwd(), "data", "core.md"), "utf-8");
 const paragraphsData: Record<string, { page: string; headingPath: string }> = JSON.parse(
   readFileSync(join(process.cwd(), "data", "paragraphs.json"), "utf-8")
 );
-
-const chunks = chunksData as Chunk[];
-const chunksById = new Map(chunks.map((c) => [c.id, c]));
-const headingById = new Map(chunks.map((c) => [c.id, c.headingPath]));
-const glossaryIndex = buildGlossaryIndex(glossaryData as Record<string, string>);
 
 /** Everything that never changes between requests, assembled once. This is
  *  the object identity DeepSeek's cache keys off of — recomputing it per
@@ -79,16 +62,6 @@ const STATIC_PREFIX: string = (() => {
     "\n\n---\nTERAS LAPORAN (core.md):\n" + CORE_MD,
   ].join("\n");
 })();
-
-function retrieveChunks(question: string): Chunk[] {
-  const expanded = expandQuery(question, glossaryIndex);
-  const queryTokens = [...new Set(tokenize(expanded))];
-  const results = search(bm25Data as unknown as BM25Index, expanded, {
-    topK: TOP_K_CHUNKS,
-    boost: (id) => headingBoost(headingById.get(id) ?? "", queryTokens),
-  });
-  return results.map((r) => chunksById.get(r.id)).filter((c): c is Chunk => Boolean(c));
-}
 
 // Deliberately lenient: matches "¶N.M.K" wherever it appears, not just
 // inside a well-formed "[¶N.M.K]" bracket. The system prompt instructs one
@@ -154,7 +127,7 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const retrieved = retrieveChunks(question);
+  const retrieved = retrieveChunks(question, TOP_K_CHUNKS);
   const retrievedText = retrieved
     .map((c) => `[[${c.id} | ${c.headingPath} | m.s. ${c.pages}]]\n${c.content}`)
     .join("\n\n");

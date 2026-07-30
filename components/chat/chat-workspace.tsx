@@ -1,8 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ChatSidebar } from "@/components/chat/chat-sidebar";
+import { History, List, MessageSquarePlus, Search, Sparkles } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { ChatHistoryDialog } from "@/components/chat/chat-history-dialog";
 import { ChatPanel } from "@/components/chat/chat-panel";
+import { TocPanel } from "@/components/toc/toc-panel";
+import { SearchPanel } from "@/components/search/search-panel";
 import type { ChatMessageData } from "@/components/chat/chat-message";
 import {
   createConversation,
@@ -11,34 +17,25 @@ import {
   titleFromMessage,
   type StoredConversation,
 } from "@/lib/chat-store";
-import type { UiLanguage } from "@/lib/ui-strings";
-
-const SIDEBAR_COLLAPSED_KEY = "rci-chat-sidebar-collapsed";
+import { getUiStrings, type UiLanguage } from "@/lib/ui-strings";
 
 interface ChatWorkspaceProps {
   lang: UiLanguage;
-  /** Hides the sidebar column entirely — used by the mobile layout, which
-   *  puts the conversation list in a drawer instead (see workspace.tsx). */
-  hideSidebar?: boolean;
 }
 
-export function ChatWorkspace({ lang, hideSidebar }: ChatWorkspaceProps) {
+export function ChatWorkspace({ lang }: ChatWorkspaceProps) {
+  const strings = getUiStrings(lang);
   const [conversations, setConversations] = useState<StoredConversation[]>([]);
   // Lazy initializer only generates a random id — no localStorage read, so
   // this is safe to compute during the server render pass too.
   const [activeId, setActiveId] = useState(() => createConversation().id);
-  // Collapsed by default — the conversation list is a secondary affordance
-  // most readers won't need open while asking questions.
-  const [collapsed, setCollapsed] = useState(true);
-  // Deliberately state, not a ref: a ref flips to "hydrated" synchronously
-  // the instant the load effect runs, but `conversations` only catches up
-  // to the loaded value on the NEXT render — so a save effect gated on a
-  // ref reads hydrated=true paired with the stale pre-load `conversations`
-  // closure and immediately overwrites localStorage with []. Gating on
-  // state instead means the save effect only ever sees hydrated=true in a
-  // render where `conversations` has already caught up, since both are set
-  // together in the same effect and thus land in the same batched render.
+  // Deliberately state, not a ref — see the equivalent comment this replaced
+  // in the pre-tabs version of this file: gating the save effect on state
+  // (not a ref) guarantees it only fires in a render where `conversations`
+  // has already caught up to the loaded value.
   const [hydrated, setHydrated] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [tab, setTab] = useState<"toc" | "search" | "chat">("chat");
 
   useEffect(() => {
     // Restoring persisted conversations after mount is deliberate — a lazy
@@ -49,7 +46,6 @@ export function ChatWorkspace({ lang, hideSidebar }: ChatWorkspaceProps) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setConversations(loaded);
     if (loaded[0]) setActiveId(loaded[0].id);
-    if (window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "0") setCollapsed(false);
     setHydrated(true);
   }, []);
 
@@ -101,37 +97,73 @@ export function ChatWorkspace({ lang, hideSidebar }: ChatWorkspaceProps) {
     if (id === activeId) setActiveId(createConversation().id);
   }
 
-  function toggleCollapsed() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
-      return next;
-    });
-  }
-
   return (
-    <div className="flex h-full">
-      {!hideSidebar && (
-        <ChatSidebar
-          conversations={conversations}
-          activeId={activeId}
-          onNewChat={handleNewChat}
-          onSelect={setActiveId}
-          onRename={handleRename}
-          onDelete={handleDelete}
-          lang={lang}
-          collapsed={collapsed}
-          onToggleCollapsed={toggleCollapsed}
-        />
-      )}
-      <div className="min-w-0 flex-1">
-        <ChatPanel
-          key={activeId}
-          lang={lang}
-          initialMessages={activeMessages}
-          onMessagesChange={handleMessagesChange}
-        />
+    <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="flex h-full flex-col">
+      <div className="border-b p-2">
+        <TabsList className="w-full">
+          <TabsTrigger value="toc">
+            <List />
+            {strings.tabKandungan}
+          </TabsTrigger>
+          <TabsTrigger value="search">
+            <Search />
+            {strings.tabCari}
+          </TabsTrigger>
+          <TabsTrigger value="chat">
+            <Sparkles />
+            {strings.tabTanyaAi}
+          </TabsTrigger>
+        </TabsList>
       </div>
-    </div>
+
+      <TabsContent value="toc" className="min-h-0 flex-1">
+        <TocPanel lang={lang} />
+      </TabsContent>
+
+      <TabsContent value="search" className="min-h-0 flex-1">
+        <SearchPanel lang={lang} />
+      </TabsContent>
+
+      <TabsContent value="chat" className="flex min-h-0 flex-1 flex-col">
+        <div className="flex items-center justify-between border-b px-3 py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">{strings.tabTanyaAi}</span>
+            <Badge variant="secondary">{strings.betaLabel}</Badge>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => setHistoryOpen(true)}
+              aria-label={strings.historyButtonLabel}
+            >
+              <History />
+            </Button>
+            <Button variant="ghost" size="icon-sm" onClick={handleNewChat} aria-label={strings.newChat}>
+              <MessageSquarePlus />
+            </Button>
+          </div>
+        </div>
+        <div className="min-h-0 flex-1">
+          <ChatPanel
+            key={activeId}
+            lang={lang}
+            initialMessages={activeMessages}
+            onMessagesChange={handleMessagesChange}
+          />
+        </div>
+      </TabsContent>
+
+      <ChatHistoryDialog
+        open={historyOpen}
+        onOpenChange={setHistoryOpen}
+        conversations={conversations}
+        activeId={activeId}
+        onSelect={setActiveId}
+        onRename={handleRename}
+        onDelete={handleDelete}
+        lang={lang}
+      />
+    </Tabs>
   );
 }

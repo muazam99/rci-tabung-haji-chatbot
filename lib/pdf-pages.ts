@@ -58,3 +58,29 @@ export function printedPageToPdfPage(label: string): number | null {
   if (pdfPage < BODY_START_PDF_PAGE || pdfPage > BODY_END_PDF_PAGE) return null;
   return pdfPage;
 }
+
+/** Like `printedPageToPdfPage`, but also resolves roman-numeral front-matter
+ *  labels ("ix", "xxxii") — needed for data/index.json and data/chunks.json,
+ *  whose page labels span the whole report (front matter included), unlike
+ *  paragraphs.json's citation labels. */
+export function printedLabelToPdfPage(label: string): number | null {
+  const trimmed = label.trim().toLowerCase();
+  if (/^[ivxlcdm]+$/.test(trimmed)) {
+    const idx = ROMAN_SEQ.indexOf(trimmed);
+    if (idx === -1) return null;
+    // Inverse of pdfPageToPrintedLabel's `ROMAN_SEQ[pdfPage - 11 + 8]`.
+    const pdfPage = idx - 8 + FRONT_MATTER_START_PDF_PAGE;
+    if (pdfPage < FRONT_MATTER_START_PDF_PAGE || pdfPage > FRONT_MATTER_END_PDF_PAGE) return null;
+    return pdfPage;
+  }
+  return printedPageToPdfPage(trimmed);
+}
+
+/** Resolves a page label OR a range ("3-11", "ix-x") to the PDF page of the
+ *  range's first page — used for table-of-contents and search-result entries,
+ *  which are always ranges/labels spanning the whole report. */
+export function pageRangeToPdfPage(range: string): number | null {
+  const first = range.split("-")[0]?.trim();
+  if (!first) return null;
+  return printedLabelToPdfPage(first);
+}

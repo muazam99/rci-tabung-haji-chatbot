@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode, type RefObject } from "react";
 import type { PdfViewerHandle } from "@/components/viewer/pdf-viewer";
-import { printedPageToPdfPage } from "@/lib/pdf-pages";
+import { pageRangeToPdfPage, printedPageToPdfPage } from "@/lib/pdf-pages";
 import paragraphsData from "@/data/paragraphs.json";
 
 const paragraphs: Record<string, { page: string; headingPath: string }> = paragraphsData;
@@ -16,8 +16,9 @@ interface ViewerContextValue {
    *  looked up via data/paragraphs.json (the same table the chat's
    *  citation validation uses). No-ops on an unknown id. */
   goToParagraph: (paragraphId: string) => void;
-  /** Jump to a printed page label ("74"), same conversion the report
-   *  reader's citations use (lib/pdf-pages.ts). */
+  /** Jump to a printed page label or range ("74", "3-11", "ix-x") — accepts
+   *  both single citation labels and the range strings used by the table of
+   *  contents and search results (lib/pdf-pages.ts). */
   goToPrintedPage: (label: string) => void;
 }
 
@@ -44,7 +45,7 @@ export function ViewerProvider({ children, onNavigate }: ViewerProviderProps) {
   });
 
   const goToPrintedPage = useCallback((label: string) => {
-    const pdfPage = printedPageToPdfPage(label);
+    const pdfPage = pageRangeToPdfPage(label);
     if (!pdfPage) return;
     viewerRef.current?.goToPage(pdfPage);
     onNavigateRef.current?.();

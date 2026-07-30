@@ -183,7 +183,7 @@ export function Workspace() {
               <ViewerPane lang={lang} />
             </TabsContent>
             <TabsContent value="chat" className="min-h-0 flex-1">
-              <ChatWorkspace lang={lang} hideSidebar />
+              <ChatWorkspace lang={lang} />
             </TabsContent>
           </Tabs>
         )}
