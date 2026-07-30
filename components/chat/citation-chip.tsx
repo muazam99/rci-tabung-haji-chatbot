@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { BookOpenText, ExternalLink } from "lucide-react";
+import { BookOpenText } from "lucide-react";
 import paragraphsData from "@/data/paragraphs.json";
-import { chapterOf, paragraphIdToAnchor } from "@/lib/citations";
 import { useViewer } from "@/components/workspace/viewer-context";
 import { getUiStrings, type UiLanguage } from "@/lib/ui-strings";
 import { Badge } from "@/components/ui/badge";
@@ -22,12 +20,8 @@ interface CitationChipProps {
 
 /** Renders one `[¶N.M.K]` citation as a clickable container: "Bab 3 ›
  *  Hibah, m.s. 74". Clicking it jumps the PDF flipbook pane (left side of
- *  the workspace) straight to that page — the report reader at
- *  /laporan/bab-N stays available as a secondary "open full text" link in
- *  the tooltip, for anyone who wants the plain-text/searchable version.
- *  Unknown paragraph ids (a citation that failed server-side validation
- *  slipped through, or a stray bracket in the model's prose) render as
- *  plain text instead of a dead button. */
+ *  the workspace) straight to that page or opens the full-text report.
+ *  Unknown paragraph ids render as plain text. */
 export function CitationChip({ paragraphId, lang }: CitationChipProps) {
   const info = paragraphs[paragraphId];
   const strings = getUiStrings(lang);
@@ -37,8 +31,6 @@ export function CitationChip({ paragraphId, lang }: CitationChipProps) {
     return <span className="text-muted-foreground">[{paragraphId}]</span>;
   }
 
-  const chapter = chapterOf(paragraphId);
-  const reportHref = chapter ? `/laporan/bab-${chapter}#${paragraphIdToAnchor(paragraphId)}` : "#";
   const shortHeading = info.headingPath.split("›").pop()?.trim() ?? info.headingPath;
 
   return (
@@ -47,32 +39,31 @@ export function CitationChip({ paragraphId, lang }: CitationChipProps) {
         render={
           <button
             type="button"
-            onClick={() => goToParagraph(paragraphId)}
             className="mx-0.5 inline-flex align-middle"
             aria-label={`${paragraphId} — ${strings.viewInReport}`}
           />
         }
       >
         <Badge
-          variant="secondary"
-          className="cursor-pointer gap-1 border border-border/60 align-middle transition-colors hover:border-primary/40 hover:bg-secondary/70 active:scale-95"
+          variant="outline"
+          className="cursor-pointer gap-1.5 border-primary/30 bg-primary/6 px-2.5 align-middle text-xs font-medium transition-all hover:border-primary/50 hover:bg-primary/12 active:scale-95"
+          onPointerDown={(e) => {
+            // Use onPointerDown so navigation fires before the tooltip's
+            // own pointer handlers can swallow the event. Stopping
+            // propagation prevents the TooltipTrigger button from also
+            // receiving the click (Base UI merges its own handlers into
+            // the rendered element, which can override custom onClick).
+            e.stopPropagation();
+            goToParagraph(paragraphId);
+          }}
         >
-          <BookOpenText />
-          {paragraphId} · {strings.citationPage} {info.page}
+          <BookOpenText className="size-3 shrink-0 text-primary" />
+          <span className="font-semibold tracking-tight">{paragraphId}</span>
+          <span className="text-muted-foreground">· {strings.citationPage} {info.page}</span>
         </Badge>
       </TooltipTrigger>
-      <TooltipContent>
-        <div className="flex flex-col items-start gap-1 py-0.5">
-          <span>{shortHeading}</span>
-          <Link
-            href={reportHref}
-            target="_blank"
-            className="inline-flex items-center gap-1 underline underline-offset-2 hover:no-underline"
-          >
-            {strings.viewInReport}
-            <ExternalLink className="size-3" />
-          </Link>
-        </div>
+      <TooltipContent side="top" align="center">
+        <span>{shortHeading}</span>
       </TooltipContent>
     </Tooltip>
   );
