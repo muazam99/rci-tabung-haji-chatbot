@@ -18,10 +18,35 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const title = "Chatbot Laporan RCI Tabung Haji";
+const description =
+  "Unofficial chatbot for the Malaysian Royal Commission of Inquiry report on Lembaga Tabung Haji (2014-2020).";
+
 export const metadata: Metadata = {
-  title: "Chatbot Laporan RCI Tabung Haji",
-  description:
-    "Unofficial chatbot for the Malaysian Royal Commission of Inquiry report on Lembaga Tabung Haji (2014-2020).",
+  metadataBase: new URL("https://rcitabunghaji.my"),
+  title,
+  description,
+  openGraph: {
+    title,
+    description,
+    url: "https://rcitabunghaji.my",
+    siteName: title,
+    images: [
+      {
+        url: "/banner.png",
+        width: 1731,
+        height: 909,
+      },
+    ],
+    locale: "ms_MY",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+    images: ["/banner.png"],
+  },
 };
 
 export default function RootLayout({
