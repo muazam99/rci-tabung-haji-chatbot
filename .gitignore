@@ -45,3 +45,4 @@ next-env.d.ts
 # at public/laporan-rci-tabung-haji.pdf (used by the flipbook viewer) and is
 # NOT covered by this pattern, since it only matches the repo root.
 /*.pdf
+.dev.vars

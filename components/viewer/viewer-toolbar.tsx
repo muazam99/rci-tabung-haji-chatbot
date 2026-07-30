@@ -53,12 +53,18 @@ export function ViewerToolbar({
 }: ViewerToolbarProps) {
   const strings = getUiStrings(lang);
   const printedLabel = pdfPageToPrintedLabel(currentPage);
+  // Only the actual text field value while it's focused — otherwise the
+  // input always displays `currentPage` directly, so it tracks page flips,
+  // TOC clicks, citation jumps, etc. instead of freezing at whatever page
+  // was current the one time this component happened to mount.
+  const [isEditing, setIsEditing] = useState(false);
   const [pageInput, setPageInput] = useState(printedLabel ?? String(currentPage));
+  const displayedValue = isEditing ? pageInput : (printedLabel ?? String(currentPage));
 
   function commitPageInput() {
+    setIsEditing(false);
     const target = printedPageToPdfPage(pageInput.trim());
     if (target) onJumpToPage(target);
-    else setPageInput(printedLabel ?? String(currentPage));
   }
 
   return (
@@ -78,10 +84,13 @@ export function ViewerToolbar({
         }}
       >
         <Input
-          value={pageInput}
+          value={displayedValue}
           onChange={(e) => setPageInput(e.target.value)}
           onBlur={commitPageInput}
-          onFocus={() => setPageInput(printedLabel ?? String(currentPage))}
+          onFocus={() => {
+            setPageInput(printedLabel ?? String(currentPage));
+            setIsEditing(true);
+          }}
           className="h-7 w-14 text-center text-xs"
           aria-label={strings.viewerJumpToPage}
         />

@@ -7,6 +7,7 @@ import { ViewerToolbar } from "@/components/viewer/viewer-toolbar";
 import { PageScrubber } from "@/components/viewer/page-scrubber";
 import { ThumbnailRail } from "@/components/viewer/thumbnail-rail";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { PendingViewerTarget } from "@/components/workspace/viewer-context";
 import { getUiStrings, type UiLanguage } from "@/lib/ui-strings";
 
 export interface PdfViewerHandle {
@@ -24,6 +25,12 @@ interface PdfViewerProps {
    *  (mobile/tablet) — see the `book-frame`/`book-spine` sizing below,
    *  which must match whichever mode the flipbook itself is told to use. */
   isDesktop: boolean;
+  /** A page/paragraph a caller tried to navigate to before this component
+   *  had mounted (see ViewerContext) — consumed once, as this instance's
+   *  initial page/highlight, since there's no live `PdfViewerHandle` ref to
+   *  call `.goToPage()` on until after mount. */
+  pendingTarget?: PendingViewerTarget | null;
+  onPendingTargetConsumed?: () => void;
 }
 
 /** Approximate report page size (A4-ish, points) — only used as a fallback
@@ -32,7 +39,7 @@ interface PdfViewerProps {
 const FALLBACK_PAGE_SIZE = { width: 595, height: 842 };
 
 export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function PdfViewer(
-  { lang, isDesktop },
+  { lang, isDesktop, pendingTarget, onPendingTargetConsumed },
   ref
 ) {
   const { pdfDoc, numPages, loading, error } = usePdfDocument();
@@ -40,7 +47,12 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
 
   const containerRef = useRef<HTMLDivElement>(null);
   const flipbookRef = useRef<PdfFlipbookHandle>(null);
-  const [currentPage, setCurrentPage] = useState(1);
+  // Lazy initializers so a viewer that mounts to satisfy a pending
+  // navigation (see the prop doc above) opens directly on the target page
+  // instead of flashing page 1 first — captured once at mount, since a
+  // later prop change (a second citation click while this instance is
+  // already mounted) goes through the imperative `goToPage` ref instead.
+  const [currentPage, setCurrentPage] = useState(() => pendingTarget?.page ?? 1);
   const [isPageFlipping, setIsPageFlipping] = useState(false);
   const [zoom, setZoom] = useState(1);
   // Visible by default — a page-thumbnail strip beneath the spread is what
@@ -50,9 +62,20 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
   const [containerSize, setContainerSize] = useState({ width: 800, height: 900 });
   const [basePageSize, setBasePageSize] = useState(FALLBACK_PAGE_SIZE);
   const [highlight, setHighlight] = useState<{ page: number; paragraphId: string; nonce: number } | null>(
-    null
+    () =>
+      pendingTarget?.paragraphId
+        ? { page: pendingTarget.page, paragraphId: pendingTarget.paragraphId, nonce: 0 }
+        : null
   );
   const highlightNonceRef = useRef(0);
+
+  useEffect(() => {
+    if (pendingTarget) onPendingTargetConsumed?.();
+    // Only ever meant to consume whatever pendingTarget this instance
+    // mounted with (captured above) — not to re-fire for every later prop
+    // change, which the ref-based goToPage path already handles.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useImperativeHandle(
     ref,
@@ -71,11 +94,18 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
   );
 
   useEffect(() => {
+    // `containerRef` is only attached to a DOM node once `loading` is
+    // false — before that this component renders the skeleton branch
+    // below, which has no such element. Without `loading` in the deps,
+    // this effect's first (and only, given an empty array) run would catch
+    // `containerRef.current` still null while the PDF is fetching, bail
+    // out immediately, and never attach an observer at all — leaving
+    // `containerSize` stuck at its hardcoded fallback default forever,
+    // which is what made the fit-to-container math (and therefore the
+    // default zoom) wrong on every load.
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries[0];
-      if (!entry) return;
+    const applySize = (width: number, height: number) => {
       // Rounded to whole pixels and only applied on an actual change: raw
       // contentRect values otherwise jitter by sub-pixel fractions between
       // observer callbacks (ordinary layout/subpixel-snapping noise, not a
@@ -83,13 +113,25 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
       // `scale` below and retriggers PdfPageCanvas's render effect on every
       // tick — cancelling each page's render before it ever finishes, so
       // the canvas stays permanently blank despite "succeeding" every time.
-      const width = Math.round(entry.contentRect.width);
-      const height = Math.round(entry.contentRect.height);
       setContainerSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+    };
+    // A ResizeObserver's callback is only guaranteed to fire "soon" after
+    // observe() — not synchronously — so this component would otherwise sit
+    // on the stale fallback default for at least one extra paint (visible
+    // as a flash of wrong sizing) whenever this effect runs on an element
+    // that's already laid out, e.g. right after the `loading` transition
+    // above. A direct measurement here covers that gap immediately; the
+    // observer below still takes over for every resize after that.
+    const rect = el.getBoundingClientRect();
+    applySize(Math.round(rect.width), Math.round(rect.height));
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      applySize(Math.round(entry.contentRect.width), Math.round(entry.contentRect.height));
     });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [loading]);
 
   useEffect(() => {
     if (!pdfDoc) return;

@@ -1,11 +1,25 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, type ReactNode, type RefObject } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import type { PdfViewerHandle } from "@/components/viewer/pdf-viewer";
 import { pageRangeToPdfPage, printedPageToPdfPage } from "@/lib/pdf-pages";
 import paragraphsData from "@/data/paragraphs.json";
 
 const paragraphs: Record<string, { page: string; headingPath: string }> = paragraphsData;
+
+export interface PendingViewerTarget {
+  page: number;
+  paragraphId?: string;
+}
 
 interface ViewerContextValue {
   /** Attach this to the single <PdfViewer ref={viewerRef}> instance that
@@ -20,6 +34,15 @@ interface ViewerContextValue {
    *  both single citation labels and the range strings used by the table of
    *  contents and search results (lib/pdf-pages.ts). */
   goToPrintedPage: (label: string) => void;
+  /** Set by goToPrintedPage/goToParagraph whenever `viewerRef.current` is
+   *  null — on mobile, the PDF viewer is only mounted once the "Laporan"
+   *  tab is actually selected, so a citation clicked from the "Pertanyaan"
+   *  tab has nowhere to call `.goToPage()` on yet. The freshly-mounted
+   *  PdfViewer reads this as its initial page/highlight instead. */
+  pendingTarget: PendingViewerTarget | null;
+  /** Called once a freshly-mounted PdfViewer has consumed `pendingTarget` as
+   *  its initial page, so it isn't reapplied to a later, unrelated mount. */
+  clearPendingTarget: () => void;
 }
 
 const ViewerContext = createContext<ViewerContextValue | null>(null);
@@ -40,14 +63,18 @@ interface ViewerProviderProps {
 export function ViewerProvider({ children, onNavigate }: ViewerProviderProps) {
   const viewerRef = useRef<PdfViewerHandle>(null);
   const onNavigateRef = useRef(onNavigate);
+  const [pendingTarget, setPendingTarget] = useState<PendingViewerTarget | null>(null);
   useEffect(() => {
     onNavigateRef.current = onNavigate;
   });
 
+  const clearPendingTarget = useCallback(() => setPendingTarget(null), []);
+
   const goToPrintedPage = useCallback((label: string) => {
     const pdfPage = pageRangeToPdfPage(label);
     if (!pdfPage) return;
-    viewerRef.current?.goToPage(pdfPage);
+    if (viewerRef.current) viewerRef.current.goToPage(pdfPage);
+    else setPendingTarget({ page: pdfPage });
     onNavigateRef.current?.();
   }, []);
 
@@ -56,12 +83,15 @@ export function ViewerProvider({ children, onNavigate }: ViewerProviderProps) {
     if (!info) return;
     const pdfPage = printedPageToPdfPage(info.page);
     if (!pdfPage) return;
-    viewerRef.current?.goToPage(pdfPage, paragraphId);
+    if (viewerRef.current) viewerRef.current.goToPage(pdfPage, paragraphId);
+    else setPendingTarget({ page: pdfPage, paragraphId });
     onNavigateRef.current?.();
   }, []);
 
   return (
-    <ViewerContext.Provider value={{ viewerRef, goToParagraph, goToPrintedPage }}>
+    <ViewerContext.Provider
+      value={{ viewerRef, goToParagraph, goToPrintedPage, pendingTarget, clearPendingTarget }}
+    >
       {children}
     </ViewerContext.Provider>
   );

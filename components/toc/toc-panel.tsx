@@ -12,15 +12,33 @@ interface TocPanelProps {
   lang: UiLanguage;
 }
 
-function ChapterRow({ node, expanded, onToggle }: { node: TocNode; expanded: boolean; onToggle: () => void }) {
+function ChapterRow({
+  node,
+  expanded,
+  onToggle,
+  onNavigate,
+}: {
+  node: TocNode;
+  expanded: boolean;
+  onToggle: () => void;
+  onNavigate: (pages: string) => void;
+}) {
+  // Chapters without children (e.g. "Penghargaan", "Senarai Definisi",
+  // "Senarai Ekshibit") have nothing to expand into — clicking them should
+  // jump straight to their own page instead of toggling an empty list.
+  const hasChildren = node.children.length > 0;
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={hasChildren ? onToggle : () => onNavigate(node.pages)}
       className="flex w-full items-center gap-1.5 rounded-lg px-2 py-2 text-left text-sm font-medium hover:bg-muted"
-      aria-expanded={expanded}
+      aria-expanded={hasChildren ? expanded : undefined}
     >
-      <ChevronRight className={cn("size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-90")} />
+      {hasChildren ? (
+        <ChevronRight className={cn("size-4 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-90")} />
+      ) : (
+        <span className="size-4 shrink-0" aria-hidden />
+      )}
       <span className="truncate">{node.title}</span>
     </button>
   );
@@ -60,7 +78,12 @@ export function TocPanel({ lang }: TocPanelProps) {
         {tree.length === 0 && <p className="mt-8 text-center text-sm text-muted-foreground">{strings.tocEmpty}</p>}
         {tree.map((chapter) => (
           <div key={chapter.headingPath}>
-            <ChapterRow node={chapter} expanded={expanded.has(chapter.headingPath)} onToggle={() => toggle(chapter.headingPath)} />
+            <ChapterRow
+              node={chapter}
+              expanded={expanded.has(chapter.headingPath)}
+              onToggle={() => toggle(chapter.headingPath)}
+              onNavigate={goToPrintedPage}
+            />
             {expanded.has(chapter.headingPath) && (
               <div className="flex flex-col gap-0.5">
                 {chapter.children.map((section) => (

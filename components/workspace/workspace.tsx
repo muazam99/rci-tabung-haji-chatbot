@@ -17,7 +17,7 @@ const DESKTOP_QUERY = "(min-width: 1024px)";
 const MIN_SPLIT = 30;
 const MAX_SPLIT = 75;
 const DEFAULT_SPLIT = 55;
-const BUY_ME_COFFEE_URL = "https://hashtech.bcl.my/embed/form/buy-me-a-coffee";
+const BUY_ME_COFFEE_URL = "https://hashtech.bcl.my/form/buy-me-a-coffee";
 
 /** The single PDF viewer instance for the whole app — must live inside
  *  <ViewerProvider> so it can attach to the ref every citation click drives.
@@ -26,10 +26,16 @@ const BUY_ME_COFFEE_URL = "https://hashtech.bcl.my/embed/form/buy-me-a-coffee";
  *  two mounted instances would fight over the same ref and double-load the
  *  3.9MB PDF. */
 function ViewerPane({ lang, isDesktop }: { lang: UiLanguage; isDesktop: boolean }) {
-  const { viewerRef } = useViewer();
+  const { viewerRef, pendingTarget, clearPendingTarget } = useViewer();
   return (
     <PdfProvider>
-      <PdfViewer ref={viewerRef} lang={lang} isDesktop={isDesktop} />
+      <PdfViewer
+        ref={viewerRef}
+        lang={lang}
+        isDesktop={isDesktop}
+        pendingTarget={pendingTarget}
+        onPendingTargetConsumed={clearPendingTarget}
+      />
     </PdfProvider>
   );
 }
@@ -176,12 +182,12 @@ export function Workspace() {
             className="flex min-h-0 flex-1 flex-col"
           >
             <div className="border-b p-2">
-              <TabsList className="h-12! w-full">
-                <TabsTrigger value="report" className="py-2.5!">
+              <TabsList className="h-10! w-full">
+                <TabsTrigger value="report" className="py-2!">
                   <FileText />
                   {strings.tabReport}
                 </TabsTrigger>
-                <TabsTrigger value="chat" className="py-2.5!">
+                <TabsTrigger value="chat" className="py-2!">
                   <Sparkles />
                   {strings.tabChat}
                 </TabsTrigger>
