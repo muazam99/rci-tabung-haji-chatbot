@@ -165,7 +165,7 @@ export function Workspace() {
               aria-orientation="vertical"
               className="w-1 shrink-0 cursor-col-resize bg-border transition-colors hover:bg-primary/50"
             />
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 flex flex-col">
               <ChatWorkspace lang={lang} />
             </div>
           </div>
@@ -182,7 +182,7 @@ export function Workspace() {
             <TabsContent value="report" className="min-h-0 flex-1">
               <ViewerPane lang={lang} />
             </TabsContent>
-            <TabsContent value="chat" className="min-h-0 flex-1">
+            <TabsContent value="chat" className="min-h-0 flex-1 flex flex-col">
               <ChatWorkspace lang={lang} />
             </TabsContent>
           </Tabs>

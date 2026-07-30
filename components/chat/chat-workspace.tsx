@@ -98,7 +98,7 @@ export function ChatWorkspace({ lang }: ChatWorkspaceProps) {
   }
 
   return (
-    <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="flex h-full flex-col">
+    <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)} className="flex min-h-0 flex-1 flex-col">
       <div className="border-b p-2">
         <TabsList className="w-full h-10!">
           <TabsTrigger value="toc" className="py-2!">
@@ -144,7 +144,7 @@ export function ChatWorkspace({ lang }: ChatWorkspaceProps) {
             </Button>
           </div>
         </div>
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 flex-1 flex flex-col">
           <ChatPanel
             key={activeId}
             lang={lang}

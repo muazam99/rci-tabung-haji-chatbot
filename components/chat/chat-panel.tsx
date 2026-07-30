@@ -5,7 +5,8 @@ import { Send, Square } from "lucide-react";
 import { ChatMessage, type ChatMessageData } from "@/components/chat/chat-message";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ScrollArea } from "@/components/ui/scroll-area";
+// ScrollArea replaced with plain div — @base-ui's Viewport uses height:100%
+// which never reliably resolves inside nested flex containers.
 import { getUiStrings, type UiLanguage } from "@/lib/ui-strings";
 
 function newId() {
@@ -121,8 +122,8 @@ export function ChatPanel({ lang, initialMessages, onMessagesChange }: ChatPanel
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <ScrollArea className="flex-1 px-4">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4">
         <div className="flex flex-col gap-3 py-4">
           {messages.length === 0 && (
             <p className="mt-8 text-center text-sm text-muted-foreground">{strings.emptyState}</p>
@@ -132,7 +133,7 @@ export function ChatPanel({ lang, initialMessages, onMessagesChange }: ChatPanel
           ))}
           <div ref={scrollAnchorRef} />
         </div>
-      </ScrollArea>
+      </div>
 
       <div className="flex items-end gap-2 border-t p-3">
         <Textarea
