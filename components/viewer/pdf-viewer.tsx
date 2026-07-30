@@ -19,6 +19,11 @@ export interface PdfViewerHandle {
 
 interface PdfViewerProps {
   lang: UiLanguage;
+  /** Whether the desktop split-pane layout is active. Drives whether the
+   *  flipbook renders a two-page spread (desktop) or a single page
+   *  (mobile/tablet) — see the `book-frame`/`book-spine` sizing below,
+   *  which must match whichever mode the flipbook itself is told to use. */
+  isDesktop: boolean;
 }
 
 /** Approximate report page size (A4-ish, points) — only used as a fallback
@@ -27,7 +32,7 @@ interface PdfViewerProps {
 const FALLBACK_PAGE_SIZE = { width: 595, height: 842 };
 
 export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function PdfViewer(
-  { lang },
+  { lang, isDesktop },
   ref
 ) {
   const { pdfDoc, numPages, loading, error } = usePdfDocument();
@@ -154,14 +159,15 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
     );
   }
 
-  // Fit a two-page spread to the container at zoom=1 (whichever dimension
-  // constrains first), then scale both dimensions directly by zoom — so
-  // zooming in naturally overflows the scrollable container (pannable via
-  // native scroll) and zooming out shrinks within it, without a separate
-  // CSS-transform code path that would fight the container's own scrollbar.
+  // Fit a two-page spread (desktop) or a single page (mobile/tablet) to the
+  // container at zoom=1 (whichever dimension constrains first), then scale
+  // both dimensions directly by zoom — so zooming in naturally overflows the
+  // scrollable container (pannable via native scroll) and zooming out
+  // shrinks within it, without a separate CSS-transform code path that would
+  // fight the container's own scrollbar.
   const availableWidth = Math.max(containerSize.width - 24, 200);
   const availableHeight = Math.max(containerSize.height - 24, 260);
-  let baseWidth = availableWidth / 2;
+  let baseWidth = isDesktop ? availableWidth / 2 : availableWidth;
   let baseHeight = (baseWidth * basePageSize.height) / basePageSize.width;
   if (baseHeight > availableHeight) {
     baseHeight = availableHeight;
@@ -175,12 +181,15 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
   // render on a loop instead of ever letting one finish.
   const renderScale = Math.round((pageWidth / basePageSize.width) * 1000) / 1000;
 
-  // react-pageflip-enhanced only applies width/height at construction time
-  // (see its source: `new PageFlip(el, props)` guarded by `if (!pageFlip.current)`,
-  // never re-run on prop changes) — so a resize or zoom change is applied by
-  // remounting the flipbook via this key, rather than expecting the library
-  // to relayout an already-live instance.
-  const sizeKey = `${Math.round(pageWidth / 4) * 4}x${Math.round(pageHeight / 4) * 4}`;
+  // react-pageflip-enhanced only applies width/height (and singlePage) at
+  // construction time (see its source: `new PageFlip(el, props)` guarded by
+  // `if (!pageFlip.current)`, never re-run on prop changes) — so a resize,
+  // zoom change, or desktop/mobile mode switch is applied by remounting the
+  // flipbook via this key, rather than expecting the library to relayout an
+  // already-live instance. `isDesktop` is included so crossing the
+  // desktop/mobile breakpoint always forces a clean remount even if the
+  // rounded pixel dimensions happen to coincide.
+  const sizeKey = `${isDesktop ? "d" : "m"}-${Math.round(pageWidth / 4) * 4}x${Math.round(pageHeight / 4) * 4}`;
 
   return (
     <div className="flex h-full flex-col">
@@ -204,8 +213,11 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
       >
         <div className="flex min-h-full items-center justify-center p-3">
           <div
-            className="book-frame relative"
-            style={{ width: Math.round(pageWidth) * 2, height: Math.round(pageHeight) }}
+            className="book-frame relative shrink-0"
+            style={{
+              width: Math.round(pageWidth) * (isDesktop ? 2 : 1),
+              height: Math.round(pageHeight),
+            }}
           >
             <PdfFlipbook
               key={sizeKey}
@@ -216,11 +228,14 @@ export const PdfViewer = forwardRef<PdfViewerHandle, PdfViewerProps>(function Pd
               pageWidth={Math.round(pageWidth)}
               pageHeight={Math.round(pageHeight)}
               scale={renderScale}
+              singlePage={!isDesktop}
               onPageChange={setCurrentPage}
               onFlippingChange={setIsPageFlipping}
               highlight={highlight ?? undefined}
             />
-            <div className="book-spine" style={{ opacity: isPageFlipping ? 0 : 1 }} aria-hidden />
+            {isDesktop && (
+              <div className="book-spine" style={{ opacity: isPageFlipping ? 0 : 1 }} aria-hidden />
+            )}
           </div>
         </div>
       </div>

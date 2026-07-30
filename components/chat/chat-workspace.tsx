@@ -130,17 +130,14 @@ export function ChatWorkspace({ lang }: ChatWorkspaceProps) {
             <span className="text-sm font-semibold">{strings.tabTanyaAi}</span>
             <Badge variant="secondary">{strings.betaLabel}</Badge>
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => setHistoryOpen(true)}
-              aria-label={strings.historyButtonLabel}
-            >
+          <div className="flex items-center gap-1.5">
+            <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}>
               <History />
+              {strings.historyButtonLabel}
             </Button>
-            <Button variant="ghost" size="icon-sm" onClick={handleNewChat} aria-label={strings.newChat}>
+            <Button variant="outline" size="sm" onClick={handleNewChat}>
               <MessageSquarePlus />
+              {strings.newChat}
             </Button>
           </div>
         </div>

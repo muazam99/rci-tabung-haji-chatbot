@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Send, Square } from "lucide-react";
+import { Send, Sparkles, Square } from "lucide-react";
 import { ChatMessage, type ChatMessageData } from "@/components/chat/chat-message";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 // ScrollArea replaced with plain div — @base-ui's Viewport uses height:100%
 // which never reliably resolves inside nested flex containers.
+import { getSuggestedPrompts } from "@/lib/suggested-prompts";
 import { getUiStrings, type UiLanguage } from "@/lib/ui-strings";
 
 function newId() {
@@ -43,8 +44,8 @@ export function ChatPanel({ lang, initialMessages, onMessagesChange }: ChatPanel
     scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  async function handleSend() {
-    const question = input.trim();
+  async function handleSend(override?: string) {
+    const question = (override ?? input).trim();
     if (!question || isSending) return;
 
     const userMessage: ChatMessageData = { id: newId(), role: "user", content: question };
@@ -126,7 +127,26 @@ export function ChatPanel({ lang, initialMessages, onMessagesChange }: ChatPanel
       <div className="min-h-0 flex-1 overflow-y-auto px-4">
         <div className="flex flex-col gap-3 py-4">
           {messages.length === 0 && (
-            <p className="mt-8 text-center text-sm text-muted-foreground">{strings.emptyState}</p>
+            <div className="flex min-h-full flex-col items-center justify-center gap-4 py-8 text-center">
+              <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Sparkles className="size-5" />
+              </div>
+              <p className="max-w-sm text-sm text-muted-foreground">{strings.emptyState}</p>
+              <div className="grid w-full max-w-md grid-cols-1 gap-2 sm:grid-cols-2">
+                {getSuggestedPrompts(lang).map(({ icon: Icon, text }) => (
+                  <Button
+                    key={text}
+                    variant="outline"
+                    onClick={() => void handleSend(text)}
+                    disabled={isSending}
+                    className="h-auto justify-start gap-2 whitespace-normal px-3 py-2 text-left text-sm font-normal"
+                  >
+                    <Icon className="size-4 shrink-0 text-muted-foreground" />
+                    {text}
+                  </Button>
+                ))}
+              </div>
+            </div>
           )}
           {messages.map((m) => (
             <ChatMessage key={m.id} message={m} lang={lang} />

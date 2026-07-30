@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Coffee, Languages } from "lucide-react";
+import { Coffee, FileText, Languages, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PdfProvider } from "@/components/viewer/pdf-provider";
@@ -25,11 +25,11 @@ const BUY_ME_COFFEE_URL = "https://hashtech.bcl.my/embed/form/buy-me-a-coffee";
  *  below), never both the desktop pane and a mobile tab simultaneously —
  *  two mounted instances would fight over the same ref and double-load the
  *  3.9MB PDF. */
-function ViewerPane({ lang }: { lang: UiLanguage }) {
+function ViewerPane({ lang, isDesktop }: { lang: UiLanguage; isDesktop: boolean }) {
   const { viewerRef } = useViewer();
   return (
     <PdfProvider>
-      <PdfViewer ref={viewerRef} lang={lang} />
+      <PdfViewer ref={viewerRef} lang={lang} isDesktop={isDesktop} />
     </PdfProvider>
   );
 }
@@ -116,7 +116,7 @@ export function Workspace() {
         <header className="flex items-center justify-between border-b px-4 py-2">
           <div>
             <h1 className="text-base font-semibold">{strings.title}</h1>
-            <p className="text-xs text-muted-foreground">{strings.subtitle}</p>
+            <p className="hidden text-xs text-muted-foreground lg:block">{strings.subtitle}</p>
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -157,7 +157,7 @@ export function Workspace() {
         {isDesktop ? (
           <div ref={splitContainerRef} className="flex min-h-0 flex-1">
             <div style={{ width: `${splitPercent}%` }} className="min-w-[320px]">
-              <ViewerPane lang={lang} />
+              <ViewerPane lang={lang} isDesktop={isDesktop} />
             </div>
             <div
               onPointerDown={() => setIsDragging(true)}
@@ -175,12 +175,20 @@ export function Workspace() {
             onValueChange={(v) => setMobileTab(v as "report" | "chat")}
             className="flex min-h-0 flex-1 flex-col"
           >
-            <TabsList className="mx-auto mt-2">
-              <TabsTrigger value="report">{strings.tabReport}</TabsTrigger>
-              <TabsTrigger value="chat">{strings.tabChat}</TabsTrigger>
-            </TabsList>
+            <div className="border-b p-2">
+              <TabsList className="h-12! w-full">
+                <TabsTrigger value="report" className="py-2.5!">
+                  <FileText />
+                  {strings.tabReport}
+                </TabsTrigger>
+                <TabsTrigger value="chat" className="py-2.5!">
+                  <Sparkles />
+                  {strings.tabChat}
+                </TabsTrigger>
+              </TabsList>
+            </div>
             <TabsContent value="report" className="min-h-0 flex-1">
-              <ViewerPane lang={lang} />
+              <ViewerPane lang={lang} isDesktop={isDesktop} />
             </TabsContent>
             <TabsContent value="chat" className="min-h-0 flex-1 flex flex-col">
               <ChatWorkspace lang={lang} />

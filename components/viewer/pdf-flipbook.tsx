@@ -32,6 +32,13 @@ interface PdfFlipbookProps {
   pageWidth: number;
   pageHeight: number;
   scale: number;
+  /** Render one page at a time instead of a two-page spread — driven by the
+   *  viewer's own desktop/mobile breakpoint rather than the library's
+   *  internal auto-portrait heuristic, since the flipbook's mounting element
+   *  is always pre-sized to exactly fit the requested mode (see pdf-viewer's
+   *  `.book-frame` sizing), which means that internal heuristic never fires
+   *  on its own. */
+  singlePage: boolean;
   onPageChange: (pdfPageNumber: number) => void;
   /** Fires whenever the library's internal drag/turn state moves off
    *  "read" (a corner-fold preview, an in-progress drag, or the flip
@@ -46,7 +53,18 @@ interface PdfFlipbookProps {
 }
 
 export const PdfFlipbook = forwardRef<PdfFlipbookHandle, PdfFlipbookProps>(function PdfFlipbook(
-  { pdfDoc, numPages, initialPage, pageWidth, pageHeight, scale, onPageChange, onFlippingChange, highlight },
+  {
+    pdfDoc,
+    numPages,
+    initialPage,
+    pageWidth,
+    pageHeight,
+    scale,
+    singlePage,
+    onPageChange,
+    onFlippingChange,
+    highlight,
+  },
   ref
 ) {
   const bookRef = useRef<FlipBookRef | null>(null);
@@ -144,6 +162,7 @@ export const PdfFlipbook = forwardRef<PdfFlipbookHandle, PdfFlipbookProps>(funct
       maxHeight={2800}
       maxShadowOpacity={0.4}
       showCover={false}
+      singlePage={singlePage}
       mobileScrollSupport
       startPage={initialPage - 1}
       onFlip={handleFlip}
