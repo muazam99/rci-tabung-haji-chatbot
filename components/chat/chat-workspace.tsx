@@ -128,7 +128,6 @@ export function ChatWorkspace({ lang }: ChatWorkspaceProps) {
         <div className="flex items-center justify-between border-b px-3 py-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold">{strings.tabTanyaAi}</span>
-            <Badge variant="secondary">{strings.betaLabel}</Badge>
           </div>
           <div className="flex items-center gap-1.5">
             <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}>

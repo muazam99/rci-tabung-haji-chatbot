@@ -3,11 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Send, Sparkles, Square } from "lucide-react";
 import { ChatMessage, type ChatMessageData } from "@/components/chat/chat-message";
+import { DonationDialog } from "@/components/chat/donation-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 // ScrollArea replaced with plain div — @base-ui's Viewport uses height:100%
 // which never reliably resolves inside nested flex containers.
 import { getSuggestedPrompts } from "@/lib/suggested-prompts";
+import { recordQuestionAsked } from "@/lib/question-count-store";
 import { getUiStrings, type UiLanguage } from "@/lib/ui-strings";
 
 function newId() {
@@ -27,6 +29,7 @@ export function ChatPanel({ lang, initialMessages, onMessagesChange }: ChatPanel
   const [messages, setMessages] = useState<ChatMessageData[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [donationOpen, setDonationOpen] = useState(false);
   const scrollAnchorRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -47,6 +50,8 @@ export function ChatPanel({ lang, initialMessages, onMessagesChange }: ChatPanel
   async function handleSend(override?: string) {
     const question = (override ?? input).trim();
     if (!question || isSending) return;
+
+    if (recordQuestionAsked()) setDonationOpen(true);
 
     const userMessage: ChatMessageData = { id: newId(), role: "user", content: question };
     const assistantId = newId();
@@ -124,6 +129,7 @@ export function ChatPanel({ lang, initialMessages, onMessagesChange }: ChatPanel
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
+      <DonationDialog open={donationOpen} onOpenChange={setDonationOpen} lang={lang} />
       <div className="min-h-0 flex-1 overflow-y-auto px-4">
         <div className="flex flex-col gap-3 py-4">
           {messages.length === 0 && (

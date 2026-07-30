@@ -9,6 +9,7 @@ import { PdfViewer } from "@/components/viewer/pdf-viewer";
 import { ViewerProvider, useViewer } from "@/components/workspace/viewer-context";
 import { ChatWorkspace } from "@/components/chat/chat-workspace";
 import { getUiStrings, type UiLanguage } from "@/lib/ui-strings";
+import { BUY_ME_COFFEE_URL } from "@/lib/site-links";
 
 const LANG_STORAGE_KEY = "rci-chat-lang";
 const SPLIT_STORAGE_KEY = "rci-workspace-split";
@@ -17,7 +18,6 @@ const DESKTOP_QUERY = "(min-width: 1024px)";
 const MIN_SPLIT = 30;
 const MAX_SPLIT = 75;
 const DEFAULT_SPLIT = 55;
-const BUY_ME_COFFEE_URL = "https://hashtech.bcl.my/form/buy-me-a-coffee";
 
 /** The single PDF viewer instance for the whole app — must live inside
  *  <ViewerProvider> so it can attach to the ref every citation click drives.

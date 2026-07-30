@@ -53,13 +53,17 @@ export const UI_STRINGS = {
     tabKandungan: "Kandungan",
     tabCari: "Cari",
     tabTanyaAi: "Tanya AI",
-    betaLabel: "Beta",
     historyButtonLabel: "Sejarah perbualan",
     historyDialogTitle: "Sejarah Perbualan",
     searchPlaceholder: "Cari dalam laporan...",
     searchPrompt: "Taip untuk mencari dalam laporan...",
     searchEmpty: "Tiada keputusan ditemui.",
     tocEmpty: "Tiada kandungan ditemui.",
+    donationDialogTitle: "Sokong laman web ini",
+    donationDialogDescription:
+      "Ada seseorang yang bayarkan untuk setiap soalan anda. Bantu kami kekalkan laman web ini dengan sumbangan kecil anda.",
+    donationDonateNow: "Derma Sekarang",
+    donationLater: "Nanti Sahaja",
   },
   en: {
     title: "RCI Tabung Haji Report Chatbot",
@@ -106,13 +110,17 @@ export const UI_STRINGS = {
     tabKandungan: "Contents",
     tabCari: "Search",
     tabTanyaAi: "Ask AI",
-    betaLabel: "Beta",
     historyButtonLabel: "Chat history",
     historyDialogTitle: "Chat History",
     searchPlaceholder: "Search the report...",
     searchPrompt: "Type to search the report...",
     searchEmpty: "No results found.",
     tocEmpty: "No contents found.",
+    donationDialogTitle: "Support this website",
+    donationDialogDescription:
+      "Every question you ask uses a paid AI API. Help us keep this website running with a small donation.",
+    donationDonateNow: "Donate Now",
+    donationLater: "Maybe Later",
   },
 } as const;
 
