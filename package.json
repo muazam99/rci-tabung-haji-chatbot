@@ -15,7 +15,10 @@
     "data:core": "tsx scripts/4-core.ts",
     "data:bm25": "tsx scripts/5-bm25.ts",
     "data:build": "npm run data:extract && npm run data:chunk && npm run data:index && npm run data:core && npm run data:bm25",
-    "test:retrieval": "tsx scripts/test-retrieval.ts"
+    "test:retrieval": "tsx scripts/test-retrieval.ts",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:deploy": "opennextjs-cloudflare deploy",
+    "cf:preview": "opennextjs-cloudflare preview"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

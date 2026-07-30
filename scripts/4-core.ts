@@ -27,6 +27,11 @@ import { join } from "node:path";
 
 const REPORT_PATH = join(process.cwd(), "data", "report.md");
 const CORE_PATH = join(process.cwd(), "data", "core.md");
+// JSON twin of core.md — the chat route needs to `import` this (statically
+// bundled) rather than `readFileSync` it, since the deployed target
+// (Cloudflare Workers, via @opennextjs/cloudflare) has no filesystem to
+// read from at runtime.
+const CORE_JSON_PATH = join(process.cwd(), "data", "core.json");
 
 const INCLUDED_HEADINGS = [
   "Ringkasan Eksekutif",
@@ -119,6 +124,7 @@ function main() {
 
   const core = parts.join("\n\n");
   writeFileSync(CORE_PATH, core, "utf-8");
+  writeFileSync(CORE_JSON_PATH, JSON.stringify({ content: core }), "utf-8");
 
   const tokens = estimateTokens(core);
   console.log(`Wrote ${CORE_PATH} (${(core.length / 1024).toFixed(0)} KB, ~${tokens} tokens)`);

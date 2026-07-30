@@ -7,9 +7,8 @@
  * `fetch(...).body.getReader()` consumer doesn't need to tell the
  * difference, so the chat UI (app/page.tsx) handles both identically.
  *
- * Runs on the Node.js runtime (not edge) because it reads core.md/
- * paragraphs.json off disk at module load and uses node:crypto for the
- * rate-limit cookie signature.
+ * Runs on the Node.js runtime (not edge) because it uses node:crypto for
+ * the rate-limit cookie signature.
  *
  * Prompt assembly is split so the ENTIRE system message is byte-identical
  * on every request (STATIC_PREFIX is computed once at module load, not
@@ -19,13 +18,13 @@
  */
 
 import { NextRequest } from "next/server";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import OpenAI from "openai";
 
 import indexData from "@/data/index.json";
 import glossaryData from "@/data/glossary.json";
 import faqData from "@/data/faq.json";
+import coreData from "@/data/core.json";
+import paragraphsJson from "@/data/paragraphs.json";
 
 import { retrieveChunks } from "@/lib/search/retrieve";
 import { SYSTEM_PROMPT } from "@/lib/system-prompt";
@@ -41,11 +40,12 @@ const MODEL = "deepseek-v4-flash";
 
 // --- Static, committed data loaded once at module scope (kept in memory
 // for the life of the warm serverless instance — this is the "in-memory,
-// no database" design the whole app is built around). ---
-const CORE_MD = readFileSync(join(process.cwd(), "data", "core.md"), "utf-8");
-const paragraphsData: Record<string, { page: string; headingPath: string }> = JSON.parse(
-  readFileSync(join(process.cwd(), "data", "paragraphs.json"), "utf-8")
-);
+// no database" design the whole app is built around). Imported rather than
+// read off disk so it's bundled at build time — the deployed target
+// (Cloudflare Workers, via @opennextjs/cloudflare) has no filesystem to
+// read from at runtime. ---
+const CORE_MD = (coreData as { content: string }).content;
+const paragraphsData = paragraphsJson as Record<string, { page: string; headingPath: string }>;
 
 /** Everything that never changes between requests, assembled once. This is
  *  the object identity DeepSeek's cache keys off of — recomputing it per
