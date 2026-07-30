@@ -50,6 +50,7 @@ export const UI_STRINGS = {
     tabChat: "Sembang",
     dismissDisclaimer: "Tutup",
     toggleSidebar: "Papar/sembunyi senarai sembang",
+    buyMeCoffee: "Belanja Kopi",
   },
   en: {
     title: "RCI Tabung Haji Report Chatbot",
@@ -93,6 +94,7 @@ export const UI_STRINGS = {
     tabChat: "Chat",
     dismissDisclaimer: "Dismiss",
     toggleSidebar: "Toggle chat list",
+    buyMeCoffee: "Buy Me a Coffee",
   },
 } as const;
 

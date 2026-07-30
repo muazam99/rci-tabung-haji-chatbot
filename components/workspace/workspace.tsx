@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Languages } from "lucide-react";
+import { Coffee, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PdfProvider } from "@/components/viewer/pdf-provider";
@@ -17,6 +17,7 @@ const DESKTOP_QUERY = "(min-width: 1024px)";
 const MIN_SPLIT = 30;
 const MAX_SPLIT = 75;
 const DEFAULT_SPLIT = 55;
+const BUY_ME_COFFEE_URL = "https://hashtech.bcl.my/embed/form/buy-me-a-coffee";
 
 /** The single PDF viewer instance for the whole app — must live inside
  *  <ViewerProvider> so it can attach to the ref every citation click drives.
@@ -117,15 +118,27 @@ export function Workspace() {
             <h1 className="text-base font-semibold">{strings.title}</h1>
             <p className="text-xs text-muted-foreground">{strings.subtitle}</p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setLang((l) => (l === "ms" ? "en" : "ms"))}
-            aria-label="Toggle language"
-          >
-            <Languages className="size-4" />
-            {strings.languageToggleLabel}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              nativeButton={false}
+              render={<a href={BUY_ME_COFFEE_URL} target="_blank" rel="noopener noreferrer" />}
+              aria-label={strings.buyMeCoffee}
+            >
+              <Coffee className="size-4" />
+              {strings.buyMeCoffee}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setLang((l) => (l === "ms" ? "en" : "ms"))}
+              aria-label="Toggle language"
+            >
+              <Languages className="size-4" />
+              {strings.languageToggleLabel}
+            </Button>
+          </div>
         </header>
 
         {!disclaimerDismissed && (
